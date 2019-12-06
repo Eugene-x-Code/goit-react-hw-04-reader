@@ -1,22 +1,45 @@
 import React, { Component } from 'react';
 import PropTypes from 'prop-types';
+import queryString from 'query-string';
 import Counter from './Counter/Counter';
 import Controls from './Controls/Controls';
 import Publication from './Publication/Publication';
 import css from './reader.module.css';
 
 export default class Reader extends Component {
-  state = { page: 0 };
+  componentDidMount() {
+    const queryParams = this.getQueryParams();
+    const { history } = this.props;
+    if (!queryParams.item) {
+      history.push({
+        pathname: '/reader',
+        search: 'item=1',
+      });
+    }
+  }
+
+  getQueryParams() {
+    const { location } = this.props;
+    return queryString.parse(location.search);
+  }
 
   handleChangePage = ({ target }) => {
-    this.setState(prevState => ({
-      page: prevState.page + (target.name === 'next' ? 1 : -1),
-    }));
+    const { history } = this.props;
+    const { location } = this.props;
+    const queryParams = this.getQueryParams();
+    const item = parseInt(queryParams.item) + (target.name === 'next' ? 1 : -1);
+    history.push({
+      pathname: location.pathname,
+      search: `item=${item}`,
+    });
   };
 
   render() {
     const { items } = this.props;
-    const { page } = this.state;
+    let page = parseInt(this.getQueryParams().item) - 1;
+    if (isNaN(page)) {
+      page = 0;
+    }
     return (
       <div className={css.reader}>
         <Publication items={items} page={page} />
@@ -32,6 +55,11 @@ export default class Reader extends Component {
 }
 
 Reader.propTypes = {
+  history: PropTypes.shape().isRequired,
+  location: PropTypes.shape({
+    pathname: PropTypes.string,
+    search: PropTypes.string,
+  }).isRequired,
   items: PropTypes.arrayOf(
     PropTypes.exact({
       id: PropTypes.string,
